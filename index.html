@@ -8,25 +8,44 @@
 .research-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
 .small{font-size:12px}.danger{color:#fbbf24}.bar{height:10px;background:#06101c;border-radius:8px;overflow:hidden;border:1px solid var(--line)}.bar i{display:block;height:100%;background:var(--accent)}
 @media(max-width:760px){.research-grid{grid-template-columns:1fr}}
+</style><style>
+.rt{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.rt .card{padding:13px}.live{display:inline-flex;align-items:center;gap:7px}.dot{width:9px;height:9px;border-radius:50%;background:#64748b}.dot.on{background:var(--good);box-shadow:0 0 10px #34d399}.mono{font:12px ui-monospace,SFMono-Regular,monospace;word-break:break-all}
+@media(max-width:760px){.rt{grid-template-columns:repeat(2,1fr)}}
 </style></head>
 <body><main>
 <section class="hero"><span class="badge">HENRY IOS • ANALYZER v3</span><h1>Phân tích lịch sử & đối chiếu nguồn dữ liệu</h1><p>Bản v3 bổ sung đọc dữ liệu từ hai API, đối chiếu lịch sử, đo mức trùng khớp và backtest dữ liệu đã xảy ra. Không tạo tín hiệu cho ván kế tiếp và không tự động đặt cược.</p><div class="notice">Các điểm số trong bản cũ là heuristic, không phải xác suất thắng. Trang này chỉ phân tích dữ liệu đã có.</div></section>
 <section class="section"><div class="panel"><h2>1. Nhập lịch sử</h2><textarea id="history" placeholder="Ví dụ: T X T T X X T hoặc 1 0 1 1 0 0 1"></textarea><div class="row" style="margin-top:10px"><button onclick="analyze()">Phân tích</button><button class="secondary" onclick="demo()">Dữ liệu mẫu</button><button class="secondary" onclick="clearAll()">Xóa</button></div></div></section>
 <section class="grid"><div class="card"><div class="label">Tổng phiên</div><div class="value" id="n">0</div></div><div class="card"><div class="label">Tài</div><div class="value ok" id="tai">0</div></div><div class="card"><div class="label">Xỉu</div><div class="value" id="xiu">0</div></div><div class="card"><div class="label">Bệt hiện tại</div><div class="value" id="streak">—</div></div></section>
 <section class="section"><div class="panel"><h2>2. Nguồn API & đối chiếu lịch sử</h2><p class="muted">Hai endpoint mặc định dưới đây chỉ được đọc để phân tích dữ liệu đã có. Nếu máy chủ không cho phép CORS, hãy dùng ô nhập JSON bên dưới.</p><div class="row"><input id="apiA" value="https://wtx.tele68.com/v1/tx/sessions" style="flex:1;min-width:260px;background:#06101c;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px"><input id="apiB" value="https://wtxmd52.tele68.com/v1/txmd5/sessions" style="flex:1;min-width:260px;background:#06101c;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px"></div><div class="row" style="margin-top:10px"><button onclick="loadAPIs()">Đọc 2 API</button><button class="secondary" onclick="compareSources()">Đối chiếu dữ liệu đã tải</button></div><div id="apiStatus" class="chips" style="margin-top:12px"><span class="chip">Chưa tải API</span></div><table style="margin-top:12px"><thead><tr><th>Nguồn</th><th>Số bản ghi</th><th>Tài</th><th>Xỉu</th><th>Trùng với nguồn kia</th></tr></thead><tbody><tr><td>API A</td><td id="aN">0</td><td id="aT">0</td><td id="aX">0</td><td id="aMatch">—</td></tr><tr><td>API B</td><td id="bN">0</td><td id="bT">0</td><td id="bX">0</td><td id="bMatch">—</td></tr></tbody></table><p class="muted" style="margin-bottom:0">Phần đối chiếu chỉ báo cáo mức đồng thuận trên dữ liệu lịch sử; không biến đồng thuận thành dự đoán ván kế tiếp.</p></div></section>
-<section class="section"><div class="panel"><h2>3. JSON lịch sử (dự phòng CORS)</h2><p class="muted">Dán JSON trả về từ API A/B. Bộ phân tích cố gắng nhận các trường phổ biến như <code>result</code>, <code>data</code>, <code>list</code>, <code>sessions</code>, <code>items</code>, <code>history</code>.</p><textarea id="jsonA" placeholder="JSON API A"></textarea><textarea id="jsonB" placeholder="JSON API B" style="margin-top:8px"></textarea><div class="row" style="margin-top:10px"><button class="secondary" onclick="parseJSONSources()">Phân tích JSON A/B</button></div></div></section>
-<section class="section"><div class="panel"><h2>4. Tỉ lệ lịch sử</h2><div id="ratio" class="chips"><span class="chip">Chưa có dữ liệu</span></div></div></section>
-<section class="section"><div class="panel"><h2>5. Ma trận chuyển trạng thái</h2><table><thead><tr><th></th><th>→ Tài</th><th>→ Xỉu</th></tr></thead><tbody><tr><th>Tài →</th><td id="tt">0</td><td id="tx">0</td></tr><tr><th>Xỉu →</th><td id="xt">0</td><td id="xx">0</td></tr></tbody></table></div></section>
-<section class="section"><div class="panel"><h2>6. Mật độ mẫu</h2><div id="patterns" class="chips"></div><p class="muted">Các mẫu chỉ được đếm trong dữ liệu đã nhập; chúng không được dùng để suy ra ván tiếp theo.</p></div></section>
-<section class="section"><div class="panel"><h2>7. Mô phỏng RNG công bằng</h2><p class="muted">Mô phỏng 3 xúc xắc bằng Web Crypto API của trình duyệt. Kết quả chỉ nhằm minh họa phân phối ngẫu nhiên.</p><div class="row"><button onclick="simulate(1000)">1.000 phiên</button><button onclick="simulate(10000)">10.000 phiên</button></div><div id="sim" style="margin-top:12px" class="chips"></div></div></section>
-<section class="section"><div class="panel"><h2>8. Research Backtest</h2>
+<section class="section"><div class="panel"><h2>3. Realtime API Monitor</h2>
+<p class="muted">Tự động đọc hai API mỗi giây, phát hiện dữ liệu mới và cập nhật thống kê lịch sử. Không phát tín hiệu đặt cược.</p>
+<div class="row">
+<button onclick="startRealtime()">▶ Bắt đầu</button>
+<button class="secondary" onclick="stopRealtime()">■ Dừng</button>
+<button class="secondary" onclick="pollNow()">↻ Đọc ngay</button>
+<label class="chip">Chu kỳ <select id="pollMs" style="background:#06101c;color:var(--text);border:0"><option value="1000" selected>1 giây</option><option value="2000">2 giây</option><option value="5000">5 giây</option></select></label>
+</div>
+<div id="rtStatus" class="chips" style="margin-top:12px"><span class="chip live"><i id="rtDot" class="dot"></i><span id="rtText">Đang dừng</span></span></div>
+<div class="rt">
+<div class="card"><div class="label">Lần đọc</div><div class="value" id="pollCount">0</div></div>
+<div class="card"><div class="label">Phiên mới A</div><div class="value" id="newA">0</div></div>
+<div class="card"><div class="label">Phiên mới B</div><div class="value" id="newB">0</div></div>
+<div class="card"><div class="label">Trạng thái API</div><div class="value" id="apiHealth">—</div></div>
+</div>
+<div id="rtLog" class="panel" style="margin-top:12px;padding:12px;max-height:180px;overflow:auto"><div class="muted">Chưa có lần đọc.</div></div>
+</div></section><section class="section"><div class="panel"><h2>4. JSON lịch sử (dự phòng CORS)</h2><p class="muted">Dán JSON trả về từ API A/B. Bộ phân tích cố gắng nhận các trường phổ biến như <code>result</code>, <code>data</code>, <code>list</code>, <code>sessions</code>, <code>items</code>, <code>history</code>.</p><textarea id="jsonA" placeholder="JSON API A"></textarea><textarea id="jsonB" placeholder="JSON API B" style="margin-top:8px"></textarea><div class="row" style="margin-top:10px"><button class="secondary" onclick="parseJSONSources()">Phân tích JSON A/B</button></div></div></section>
+<section class="section"><div class="panel"><h2>5. Tỉ lệ lịch sử</h2><div id="ratio" class="chips"><span class="chip">Chưa có dữ liệu</span></div></div></section>
+<section class="section"><div class="panel"><h2>6. Ma trận chuyển trạng thái</h2><table><thead><tr><th></th><th>→ Tài</th><th>→ Xỉu</th></tr></thead><tbody><tr><th>Tài →</th><td id="tt">0</td><td id="tx">0</td></tr><tr><th>Xỉu →</th><td id="xt">0</td><td id="xx">0</td></tr></tbody></table></div></section>
+<section class="section"><div class="panel"><h2>7. Mật độ mẫu</h2><div id="patterns" class="chips"></div><p class="muted">Các mẫu chỉ được đếm trong dữ liệu đã nhập; chúng không được dùng để suy ra ván tiếp theo.</p></div></section>
+<section class="section"><div class="panel"><h2>8. Mô phỏng RNG công bằng</h2><p class="muted">Mô phỏng 3 xúc xắc bằng Web Crypto API của trình duyệt. Kết quả chỉ nhằm minh họa phân phối ngẫu nhiên.</p><div class="row"><button onclick="simulate(1000)">1.000 phiên</button><button onclick="simulate(10000)">10.000 phiên</button></div><div id="sim" style="margin-top:12px" class="chips"></div></div></section>
+<section class="section"><div class="panel"><h2>9. Research Backtest</h2>
 <p class="muted">Đánh giá ngoài mẫu theo kiểu walk-forward. Mỗi phiên kiểm tra chỉ được dùng dữ liệu đứng trước nó; kết quả là thống kê nghiên cứu trên lịch sử.</p>
 <div class="row"><label class="chip">Cửa sổ: <select id="window" style="background:#06101c;color:var(--text);border:0"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option><option value="30">30</option></select></label><button onclick="researchBacktest()">Chạy nghiên cứu</button></div>
 <div id="research" class="research-grid"></div>
 <div id="modelTable" style="margin-top:14px;overflow:auto"></div>
 <p class="small danger">Lưu ý: accuracy lịch sử không chứng minh khả năng dự đoán tương lai. Nếu dữ liệu được sinh ngẫu nhiên độc lập, sai lệch ngắn hạn có thể xuất hiện chỉ do ngẫu nhiên.</p>
 </div><div class="panel" style="margin-top:14px"><h2>9. Kiểm tra thuật toán cũ</h2><p class="muted">Bản v2 ghi rõ các thành phần từng có trong mã cũ: tần suất 12/30 phiên, chuyển trạng thái, bệt và mẫu 11/22/212/2112. Chúng được hiển thị như tài liệu kỹ thuật, không chuyển thành hệ thống dự đoán.</p><div class="chips"><span class="chip">12 phiên</span><span class="chip">30 phiên</span><span class="chip">Transition</span><span class="chip">Streak</span><span class="chip">11</span><span class="chip">22</span><span class="chip">212</span><span class="chip">2112</span></div></div></section>
-<footer>© code by [ DucManh 01] • HENRY IOS Analyzer v3 • Static GitHub Pages</footer>
+<footer>© code by [ DucManh 01] • HENRY IOS Analyzer v3 Realtime • Static GitHub Pages</footer>
 </main>
 <script>
 let S=[];
@@ -88,4 +107,24 @@ function backtest(){
   let same=0,changes=0;for(let i=1;i<s.length;i++){if(s[i]===s[i-1])same++;else changes++}
   const repeat=same/(s.length-1)*100;document.getElementById('backtest').innerHTML='<span class="chip">Cặp liên tiếp: '+(s.length-1)+'</span><span class="chip">Giữ trạng thái: '+same+' ('+repeat.toFixed(2)+'%)</span><span class="chip">Đổi trạng thái: '+changes+' ('+(100-repeat).toFixed(2)+'%)</span>';
 }
+</script><script>
+let rtTimer=null,rtBusy=false,rtPolls=0,lastAKey='',lastBKey='',rtNewA=0,rtNewB=0;
+function keyOf(x){if(!x||typeof x!=='object')return '';for(const k of ['id','sessionId','session_id','issue','period','round','gameId','game_id','createdAt','created_at','timestamp','time'])if(x[k]!==undefined)return String(x[k]);return JSON.stringify(x)}
+function flattenItems(obj){if(Array.isArray(obj))return obj;if(!obj||typeof obj!=='object')return [];for(const k of ['result','data','list','sessions','items','history','records'])if(obj[k]){const r=flattenItems(obj[k]);if(r.length)return r}return Object.values(obj).flatMap(v=>Array.isArray(v)?v:[])}
+function extractItems(obj){return flattenItems(obj).filter(x=>x&&typeof x==='object')}
+async function readRaw(url){const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
+function logRT(msg){const box=document.getElementById('rtLog'),d=document.createElement('div');d.className='mono';d.textContent=new Date().toLocaleTimeString('vi-VN')+' • '+msg;box.prepend(d);while(box.children.length>12)box.removeChild(box.lastChild)}
+async function pollNow(){
+ if(rtBusy)return;rtBusy=true;rtPolls++;document.getElementById('pollCount').textContent=rtPolls;
+ let ok=0,newA=0,newB=0;
+ try{const raw=await readRaw(document.getElementById('apiA').value);const items=extractItems(raw);if(items.length){const k=keyOf(items[0]);if(k&&k!==lastAKey){if(lastAKey)newA=1;lastAKey=k}APIA=extract(raw);ok++;}}catch(e){logRT('API A: '+e.message)}
+ try{const raw=await readRaw(document.getElementById('apiB').value);const items=extractItems(raw);if(items.length){const k=keyOf(items[0]);if(k&&k!==lastBKey){if(lastBKey)newB=1;lastBKey=k}APIB=extract(raw);ok++;}}catch(e){logRT('API B: '+e.message)}
+ rtNewA+=newA;rtNewB+=newB;document.getElementById('newA').textContent=rtNewA;document.getElementById('newB').textContent=rtNewB;document.getElementById('apiHealth').textContent=ok+'/2';document.getElementById('apiHealth').className='value '+(ok===2?'ok':'');
+ compareSources();
+ const combined=APIA.length?APIA:APIB;if(combined.length){document.getElementById('history').value=combined.slice().reverse().map(v=>v?'T':'X').join(' ');analyze()}
+ logRT('A='+APIA.length+' bản ghi • B='+APIB.length+' bản ghi • mới A='+newA+' • mới B='+newB);
+ rtBusy=false;
+}
+function startRealtime(){if(rtTimer)return;document.getElementById('rtDot').classList.add('on');document.getElementById('rtText').textContent='Đang chạy';pollNow();rtTimer=setInterval(pollNow,Number(document.getElementById('pollMs').value)||1000)}
+function stopRealtime(){if(rtTimer){clearInterval(rtTimer);rtTimer=null}document.getElementById('rtDot').classList.remove('on');document.getElementById('rtText').textContent='Đang dừng'}
 </script></body></html>
